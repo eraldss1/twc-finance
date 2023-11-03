@@ -1,6 +1,7 @@
+import yaml
+
 from models.finance_data_reader import FinanceDataReader
 from models.watcher import Watcher
-import yaml
 
 with open("./config/twc_config.yml", "r") as file:
     twc_config = yaml.safe_load(file)
