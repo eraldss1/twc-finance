@@ -57,7 +57,7 @@ class FinanceDataReader:
 
     #################
     # Check if file_name exist in logdata and success to processed
-    def check_log_data(self, **kwargs):
+    def check_log_data(self):
         cursor = self.connection.cursor(prepared=True)
         cursor.execute(
             """
@@ -67,7 +67,7 @@ class FinanceDataReader:
             AND sheetName=(?)
             AND status=(?)
             """,
-            (kwargs["file_name"], kwargs["sheet_name"], kwargs["status"]),
+            (self.file_name, self.sheet_name, "Success"),
         )
 
         result = cursor.fetchall()
