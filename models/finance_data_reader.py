@@ -149,7 +149,7 @@ class FinanceDataReader:
         # Konversi struktur data
         data = data.replace({np.nan: None})
         dict_data = data.to_dict("records")
-        cur = self.connection.cursor()
+        cursor = self.connection.cursor()
 
         print("Start:", str(self.current_execute_time))
 
@@ -179,7 +179,7 @@ class FinanceDataReader:
                 if isinstance(data_hasil[0], (int, float)):
                     data_hasil = [0 if v is None else v for v in data_hasil]
 
-                    cur.execute(
+                    cursor.execute(
                         """
                                 SELECT COUNT(*) 
                                 FROM finance
@@ -202,11 +202,11 @@ class FinanceDataReader:
                         )
                     )
 
-                    data = cur.fetchall()
+                    data = cursor.fetchall()
                     len_data = data[0][0]
                     if len_data == 0:
                         j += 1
-                        cur.execute(
+                        cursor.execute(
                             """
                                     INSERT INTO finance 
                                     VALUES ('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s')
@@ -234,7 +234,7 @@ class FinanceDataReader:
             bar.finish()
             self.connection.commit()
             xls.close()
-            cur.close()
+            cursor.close()
 
             # Jika jumlah data sesuai, masukkan Log Success ke logData
             if (j + k) == (len(dict_data)):
