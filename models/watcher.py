@@ -1,5 +1,7 @@
 import time
+
 from watchdog.observers import Observer
+
 from models.handler import Handler
 
 
@@ -13,8 +15,8 @@ class Watcher:
         self.driver = config["driver"]
 
     def run(self):
-        print("Press CTRL+C to exit")
-        print("Directory watch running")
+        print("Press CTRL+C to exit.")
+        print("Listen to directory: {}".format(self.directory_to_watch))
 
         event_handler = Handler(driver=self.driver)
         self.observer.schedule(event_handler, self.directory_to_watch, recursive=False)
@@ -25,7 +27,7 @@ class Watcher:
                 time.sleep(5)
         except KeyboardInterrupt:
             self.observer.stop()
-            print("Directory watch stopped")
+            print("Listening to {} stopped".format(self.directory_to_watch))
         except Exception as e:
             print(e)
 
