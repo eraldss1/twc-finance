@@ -17,7 +17,7 @@ class Watcher:
         print("Directory watch running")
 
         event_handler = Handler(driver=self.driver)
-        self.observer.schedule(event_handler, self.directory_to_watch, recursive=True)
+        self.observer.schedule(event_handler, self.directory_to_watch, recursive=False)
         self.observer.start()
 
         try:

@@ -1,5 +1,6 @@
 import os
-import shutil
+
+# import shutil
 import sys
 import time
 from datetime import datetime
@@ -181,14 +182,14 @@ class FinanceDataReader:
 
                     cursor.execute(
                         """
-                                SELECT COUNT(*) 
+                                SELECT COUNT(*)
                                 FROM finance
-                                WHERE id_cluster_finance = '%s' 
-                                AND unit_name = '%s' 
-                                AND id_component_name = '%s' 
-                                AND bytelevel = '%s' 
-                                AND bRealization = '%s' 
-                                AND py = '%s' 
+                                WHERE id_cluster_finance = '%s'
+                                AND unit_name = '%s'
+                                AND id_component_name = '%s'
+                                AND bytelevel = '%s'
+                                AND bRealization = '%s'
+                                AND py = '%s'
                                 AND pm = '%s'
                                 """
                         % (
@@ -208,7 +209,7 @@ class FinanceDataReader:
                         j += 1
                         cursor.execute(
                             """
-                                    INSERT INTO finance 
+                                    INSERT INTO finance
                                     VALUES ('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s')
                                     """
                             % (
@@ -254,8 +255,14 @@ class FinanceDataReader:
 
             # Pindahkan file
             source = file_path
-            destination = os.path.join(os.path.dirname(file_path), "archive")
-            shutil.move(source, destination)
+            destination = os.path.join(
+                os.path.dirname(file_path), "archive", self.current_file_name
+            )
+
+            print(source)
+            print(destination)
+
+            os.rename(source, destination)
             time.sleep(5)
 
             # Selesai
