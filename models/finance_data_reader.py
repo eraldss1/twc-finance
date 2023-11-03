@@ -1,13 +1,11 @@
 import os
-
-# import shutil
 import sys
 import time
 from datetime import datetime
 
 import numpy as np
 import pandas as pd
-import progressbar
+from alive_progress import alive_bar
 from mysql.connector import Error, connect
 
 from utils.get_period import get_period_time
@@ -134,6 +132,52 @@ class FinanceDataReader:
         self.current_period_time = None
         self.current_execute_time = None
 
+    # Check if row already in finance table
+    def check_finance(self, data):
+        cursor = self.connection.cursor(prepared=True)
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM finance
+            WHERE id_cluster_finance=(?)
+            AND unit_name=(?)
+            AND id_component_name=(?)
+            AND bytelevel=(?)
+            AND bRealization=(?)
+            AND py=(?)
+            AND pm=(?)
+            """,
+            (
+                int(data[0]),
+                data[3],
+                data[4],
+                data[6],
+                int(data[7]),
+                int(data[8]),
+                int(data[10]),
+            ),
+        )
+        result = cursor.fetchall()
+        cursor.close()
+
+        row_count = result[0][0]
+        if row_count > 0:
+            return True
+        else:
+            return False
+
+    # Insert new row to finance
+    def insert_to_finance(self, data):
+        cursor = self.connection.cursor(prepared=True)
+        cursor.execute(
+            """
+            INSERT INTO finance
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+            """,
+            tuple([x for x in data]),
+        )
+        cursor.close()
+
     # File processing
     def process_file(self, file_path):
         self.set_current_process_attributes(file_path)
@@ -149,132 +193,81 @@ class FinanceDataReader:
 
         # Konversi struktur data
         data = data.replace({np.nan: None})
-        dict_data = data.to_dict("records")
+        rows = data.to_dict(orient="records")
         cursor = self.connection.cursor()
 
         print("Start:", str(self.current_execute_time))
 
-        # Membuat bar progress
-        bar = progressbar.ProgressBar(
-            maxval=len(dict_data),
-            widgets=[progressbar.Bar("=", "[", "]"), " ", progressbar.Percentage()],
-        )
-
-        bar.start()
-        j = 0
-        k = 0
+        inserted = 0
+        not_inserted = 0
 
         # Mengecek data pada logData apakah sudah tersedia
-        is_exist = self.check_log_data()
+        is_file_duplicate = self.check_log_data()
 
         # Jika pada logData data belum pernah ada, masukkan ke table finance
-        if not is_exist:
-            # Masukkan data row by row
-            for i in range(len(dict_data)):
-                bar.update(i)
-                time.sleep(0.01)
+        if not is_file_duplicate:
+            with alive_bar(len(data)) as bar:
+                for row in rows:
+                    arr = list(row.values())
+                    arr.append(self.current_execute_time)
 
-                data_hasil = list(dict_data[i].values())
-                data_hasil.append(self.current_execute_time)
+                    if isinstance(arr[0], (int, float)):
+                        # If the cells contain None, set to 0
+                        arr = [0 if value is None else value for value in arr]
 
-                if isinstance(data_hasil[0], (int, float)):
-                    data_hasil = [0 if v is None else v for v in data_hasil]
+                        is_row_duplicate = self.check_finance(arr)
 
-                    cursor.execute(
-                        """
-                                SELECT COUNT(*)
-                                FROM finance
-                                WHERE id_cluster_finance = '%s'
-                                AND unit_name = '%s'
-                                AND id_component_name = '%s'
-                                AND bytelevel = '%s'
-                                AND bRealization = '%s'
-                                AND py = '%s'
-                                AND pm = '%s'
-                                """
-                        % (
-                            int(data_hasil[0]),
-                            data_hasil[3],
-                            data_hasil[4],
-                            data_hasil[6],
-                            int(data_hasil[7]),
-                            int(data_hasil[8]),
-                            int(data_hasil[10]),
-                        )
+                        if not is_row_duplicate:
+                            inserted += 1
+                            self.insert_to_finance(arr)
+                        else:
+                            not_inserted += 1
+
+                    else:
+                        not_inserted += 1
+
+                    bar()
+
+                self.connection.commit()
+                xls.close()
+                cursor.close()
+
+                # Jika jumlah data sesuai, masukkan Log Success ke logData
+                if (inserted + not_inserted) == (len(data)):
+                    self.insert_to_log_data(
+                        status="Success",
+                        deskripsi="Done",
+                        jumlah_row=str(inserted),
                     )
 
-                    data = cursor.fetchall()
-                    len_data = data[0][0]
-                    if len_data == 0:
-                        j += 1
-                        cursor.execute(
-                            """
-                                    INSERT INTO finance
-                                    VALUES ('%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s','%s')
-                                    """
-                            % (
-                                data_hasil[0],
-                                data_hasil[1],
-                                data_hasil[2],
-                                data_hasil[3],
-                                data_hasil[4],
-                                data_hasil[5],
-                                data_hasil[6],
-                                data_hasil[7],
-                                data_hasil[8],
-                                data_hasil[9],
-                                data_hasil[10],
-                                data_hasil[11],
-                                data_hasil[12],
-                            )
-                        )
-
+                # Jika jumlah data tidak sesuai, masukkan Log Error
                 else:
-                    k += 1
+                    self.insert_to_log_data(
+                        status="Error",
+                        deskripsi="Data sudah terdapat di database",
+                        jumlah_row=str(inserted),
+                    )
 
-            bar.finish()
-            self.connection.commit()
-            xls.close()
-            cursor.close()
-
-            # Jika jumlah data sesuai, masukkan Log Success ke logData
-            if (j + k) == (len(dict_data)):
-                self.insert_to_log_data(
-                    status="Success",
-                    deskripsi="Done",
-                    jumlah_row=str(j),
+                # Pindahkan file
+                source = file_path
+                destination = os.path.join(
+                    os.path.dirname(file_path), "archive", self.current_file_name
                 )
+                os.rename(source, destination)
 
-            # Jika jumlah data tidak sesuai, masukkan Log Error
-            else:
-                self.insert_to_log_data(
-                    status="Error",
-                    deskripsi="Data sudah terdapat di database",
-                    jumlah_row=str(j),
-                )
-
-            # Pindahkan file
-            source = file_path
-            destination = os.path.join(
-                os.path.dirname(file_path), "archive", self.current_file_name
-            )
-
-            print(source)
-            print(destination)
-
-            os.rename(source, destination)
-            time.sleep(5)
-
-            # Selesai
+                # Selesai
 
         # Jika pada logData data sudah pernah ada, masukkan Log Error
         else:
             self.insert_to_log_data(
                 status="Error",
                 deskripsi="Data sudah pernah diinput atau sheet tidak sesuai",
-                jumlah_row=str(j),
+                jumlah_row=str(inserted),
             )
 
         self.reset_current_process_attributes()
+
+        print("\nListen to directory: {}".format(self.path))
+        time.sleep(5)
 
     # ----------------
