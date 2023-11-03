@@ -67,7 +67,7 @@ class FinanceDataReader:
             AND sheetName=(?)
             AND status=(?)
             """,
-            (self.file_name, self.sheet_name, "Success"),
+            (self.current_file_name, self.current_sheet_name, "Success"),
         )
 
         result = cursor.fetchall()
@@ -111,19 +111,19 @@ class FinanceDataReader:
     # For each new file processing, generate the atrributes for logging
     def set_current_process_attributes(self, file_path):
         # Timestamp saat eksekusi file
-        self.execute_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.current_execute_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
         # Nama file
-        self.file_name = os.path.basename(file_path)
+        self.current_file_name = os.path.basename(file_path)
 
         # Mengambil periode waktu berdasarkan nama file
-        self.period_time = get_period_time(self.file_name)
+        self.current_period_time = get_period_time(self.current_file_name)
 
         # Nama sheet yang akan di proses
-        self.sheet_name = "Data Konversi(Data Mart)"
+        self.current_sheet_name = "Data Konversi(Data Mart)"
 
         # Data finance
-        self.data_type = "FinanceDataReader"
+        self.current_data_type = "FinanceDataReader"
 
     # Reset attribute for the next process
     def reset_current_process_attributes(self):
@@ -144,14 +144,14 @@ class FinanceDataReader:
             sheet_to_df_map[sn] = xls.parse(sn)
 
         # Baca data pada sheet 'Data Konversi(Data Mart)'
-        data = sheet_to_df_map[self.sheet_name]
+        data = sheet_to_df_map[self.current_sheet_name]
 
         # Konversi struktur data
         data = data.replace({np.nan: None})
         dict_data = data.to_dict("records")
         cur = self.connection.cursor()
 
-        print("Start:", str(self.execute_time))
+        print("Start:", str(self.current_execute_time))
 
         # Membuat bar progress
         bar = progressbar.ProgressBar(
@@ -174,7 +174,7 @@ class FinanceDataReader:
                 time.sleep(0.01)
 
                 data_hasil = list(dict_data[i].values())
-                data_hasil.append(self.execute_time)
+                data_hasil.append(self.current_execute_time)
 
                 if isinstance(data_hasil[0], (int, float)):
                     data_hasil = [0 if v is None else v for v in data_hasil]
@@ -233,6 +233,7 @@ class FinanceDataReader:
 
             bar.finish()
             self.connection.commit()
+            xls.close()
             cur.close()
 
             # Jika jumlah data sesuai, masukkan Log Success ke logData
@@ -255,6 +256,7 @@ class FinanceDataReader:
             source = file_path
             destination = os.path.join(os.path.dirname(file_path), "archive")
             shutil.move(source, destination)
+            time.sleep(5)
 
             # Selesai
 
