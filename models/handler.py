@@ -17,6 +17,8 @@ class Handler(watchdog.events.PatternMatchingEventHandler):
     def on_created(self, event):
         print("New file received - %s." % event.src_path)
 
+        time.sleep(2)
+
         file_name = str(os.path.basename(event.src_path))
         if file_name.startswith("TWCFIN"):
             self.driver.process_file(event.src_path)
