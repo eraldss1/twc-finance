@@ -81,15 +81,14 @@ class FinanceDataReader:
     # Insert new log data
     def insert_to_log_data(self, **kwargs):
         cursor = self.connection.cursor(prepared=True)
-        print("   ", kwargs["status"], ": ", kwargs["deskripsi"], sep="")
+        print(f"{kwargs["status"]}: {kwargs["deskripsi"]}")
 
         cursor.execute(
             """
             INSERT INTO logdata 
-            VALUES (?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?)
             """,
             (
-                None,
                 self.current_file_name,
                 self.current_data_type,
                 self.current_sheet_name,
@@ -176,6 +175,8 @@ class FinanceDataReader:
             """,
             tuple([x for x in data]),
         )
+
+        self.connection.commit()
         cursor.close()
 
     # File processing
@@ -226,9 +227,10 @@ class FinanceDataReader:
                     else:
                         not_inserted += 1
 
+                    bar.text(f"| OK: {inserted} ~ DUPLICATE: {not_inserted}")
                     bar()
 
-                self.connection.commit()
+                # self.connection.commit()
                 xls.close()
                 cursor.close()
 
@@ -255,6 +257,7 @@ class FinanceDataReader:
                 )
                 os.rename(source, destination)
 
+                print(f"Inserted: {inserted} \tNot inserted: {not_inserted}")
                 # Selesai
 
         # Jika pada logData data sudah pernah ada, masukkan Log Error
