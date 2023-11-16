@@ -1,4 +1,4 @@
-# Excel File Validator and Data Mart Loader
+# TWC Finance
 
 This Python program is designed to run on a server, monitoring a specified directory for the upload of Excel files. Once an Excel file is detected, the program reads and validates each row before inserting the validated data into a Data Mart using MySQL.
 
