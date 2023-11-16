@@ -2,3 +2,4 @@ config/twc_config.yml
 
 .vscode
 *.pyc
+__pycache__
