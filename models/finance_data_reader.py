@@ -81,7 +81,7 @@ class FinanceDataReader:
     # Insert new log data
     def insert_to_log_data(self, **kwargs):
         cursor = self.connection.cursor(prepared=True)
-        print(f"{kwargs["status"]}: {kwargs["deskripsi"]}")
+        print(f"{kwargs['status']}: {kwargs['deskripsi']}")
 
         cursor.execute(
             """
