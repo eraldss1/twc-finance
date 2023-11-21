@@ -30,6 +30,7 @@ class FinanceDataReader:
                 user=config["user"],
                 password=config["password"],
                 database=config["database"],
+                auth_plugin='mysql_native_password'
             )
             self.path = config["path"]
 
