@@ -222,6 +222,7 @@ class FinanceDataReader:
                             inserted += 1
                             self.insert_to_finance(arr)
                         else:
+                            # print(row)
                             not_inserted += 1
 
                     else:
