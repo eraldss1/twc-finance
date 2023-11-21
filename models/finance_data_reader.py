@@ -3,7 +3,7 @@ import sys
 import time
 from datetime import datetime
 
-import numpy as np
+from math import nan
 import pandas as pd
 from alive_progress import alive_bar
 from mysql.connector import Error, connect
@@ -193,7 +193,7 @@ class FinanceDataReader:
         data = sheet_to_df_map[self.current_sheet_name]
 
         # Konversi struktur data
-        data = data.replace({np.nan: None})
+        data = data.replace({nan: None})
         rows = data.to_dict(orient="records")
         cursor = self.connection.cursor()
 
