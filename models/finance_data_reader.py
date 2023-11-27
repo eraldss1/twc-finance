@@ -62,7 +62,7 @@ class FinanceDataReader:
         cursor.execute(
             """
             SELECT COUNT(*)
-            FROM logData
+            FROM logdata
             WHERE fileName=(?)
             AND sheetName=(?)
             AND status=(?)
