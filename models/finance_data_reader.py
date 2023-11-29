@@ -9,6 +9,7 @@ from alive_progress import alive_bar
 from mysql.connector import Error, connect
 
 from utils.get_period import get_period_time
+from utils.get_datatype import get_data_type
 
 
 class FinanceDataReader:
@@ -118,11 +119,12 @@ class FinanceDataReader:
         # Mengambil periode waktu berdasarkan nama file
         self.current_period_time = get_period_time(self.current_file_name)
 
+        # Mengambil periode waktu berdasarkan nama file
+        self.current_data_type = get_data_type(self.current_file_name)
+
         # Nama sheet yang akan di proses
         self.current_sheet_name = "Data Konversi(Data Mart)"
 
-        # Data finance
-        self.current_data_type = "FinanceDataReader"
 
     # Reset attribute for the next process
     def reset_current_process_attributes(self):
